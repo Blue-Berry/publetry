@@ -99,9 +99,14 @@
               runHook postBuild
             '';
           });
-          ${package} = prev.${package}.overrideAttrs (_: {
+          ${package} = prev.${package}.overrideAttrs (old: {
             # Prevent the ocaml dependencies from leaking into dependent environments
             doNixSupport = false;
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
+            postInstall = (old.postInstall or "") + ''
+              makeWrapper $out/bin/publetry $out/bin/publetry-server \
+                --add-flags "$out/share/publetry.db"
+            '';
           });
         };
         scope' = scope.overrideScope overlay;

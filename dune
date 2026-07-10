@@ -6,6 +6,10 @@
  (action
   (run %{build_db} %{target} poems.json)))
 
+(install
+ (section share_root)
+ (files publetry.db))
+
 (env
  (dev
   (flags (:standard)))
