@@ -34,6 +34,12 @@ let () =
      let* filtered = Db.search_title db ~author:"Robert Herrick" "Harvest" in
      assert (List.length filtered > 0);
      assert (List.for_all (fun Db.{ author; _ } -> author = "Robert Herrick") filtered);
+     let* herrick_author = Db.search_author db "Robert Herrick" in
+     assert (List.length herrick_author > 0);
+     let* titles = Db.search_titles db "Harvest" in
+     assert (List.mem "Harvest Home" titles);
+     let* found = Db.find db ~author:"Robert Herrick" ~title:"Harvest Home" in
+     assert (Option.is_some found);
      Lwt.return_ok ())
   |> function
   | Ok () -> ()

@@ -74,6 +74,24 @@ module Req = struct
     @@ "SELECT p.author FROM poems_fts JOIN poems p ON p.id = poems_fts.rowid WHERE \
         poems_fts MATCH ? ORDER BY rank"
   ;;
+
+  let search_titles =
+    (string ->* string)
+    @@ "SELECT p.title FROM poems_fts JOIN poems p ON p.id = poems_fts.rowid WHERE \
+        poems_fts MATCH ? ORDER BY rank"
+  ;;
+
+  let find =
+    (t2 string string ->? t3 string string string)
+    @@ "SELECT author, title, text FROM poems WHERE author = ? COLLATE NOCASE AND title \
+        = ? COLLATE NOCASE LIMIT 1"
+  ;;
+
+  let find_by_author =
+    (string ->* t3 string string string)
+    @@ "SELECT author, title, text FROM poems WHERE author = ? COLLATE NOCASE ORDER BY \
+        title"
+  ;;
 end
 
 let init pool =
@@ -144,6 +162,10 @@ let search_authors pool raw_query =
       pool
 ;;
 
+let search_author pool raw_author =
+  run_search pool (fts5_query ~prefix:"author:" raw_author)
+;;
+
 let search_title ?author pool raw_title =
   let author_clauses =
     match author with
@@ -157,6 +179,39 @@ let search_title ?author pool raw_title =
   in
   let clauses = author_clauses @ title_clauses in
   run_search pool (String.concat " AND " clauses)
+;;
+
+let search_titles pool raw_query =
+  let query = fts5_query ~prefix:"title:" raw_query in
+  if String.length query = 0
+  then Lwt.return_ok []
+  else
+    Caqti_lwt_unix.Pool.use
+      (fun (module C : Caqti_lwt.CONNECTION) ->
+         let open Lwt_result.Syntax in
+         let* titles = C.collect_list Req.search_titles query in
+         Lwt.return_ok (List.sort_uniq String.compare titles))
+      pool
+;;
+
+let find pool ~author ~title =
+  Caqti_lwt_unix.Pool.use
+    (fun (module C : Caqti_lwt.CONNECTION) ->
+       let open Lwt_result.Syntax in
+       let* row = C.find_opt Req.find (author, title) in
+       Lwt.return_ok
+         (Option.map (fun (author, title, text) -> { author; title; text }) row))
+    pool
+;;
+
+let find_by_author pool author =
+  Caqti_lwt_unix.Pool.use
+    (fun (module C : Caqti_lwt.CONNECTION) ->
+       let open Lwt_result.Syntax in
+       let* rows = C.collect_list Req.find_by_author author in
+       Lwt.return_ok
+         (List.map (fun (author, title, text) -> { author; title; text }) rows))
+    pool
 ;;
 
 let error_of_path path msg =

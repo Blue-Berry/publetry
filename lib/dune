@@ -6,6 +6,7 @@
   caqti-lwt
   caqti-lwt.unix
   caqti-driver-sqlite3
+  dream
   lwt
   lwt.unix
   uri
