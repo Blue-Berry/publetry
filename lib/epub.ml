@@ -8,7 +8,9 @@ let markdown_of_poem { Db.author; title; text } =
     text
 ;;
 
-let command = "pandoc", [| "pandoc"; "-f"; "markdown"; "-t"; "epub3"; "-o"; "-" |]
+let command =
+  "pandoc", [| "pandoc"; "-f"; "markdown+hard_line_breaks"; "-t"; "epub3"; "-o"; "-" |]
+;;
 
 let generate poem =
   let markdown = markdown_of_poem poem in
