@@ -88,14 +88,60 @@ let add pool { author; title; text } =
     pool
 ;;
 
-let search pool query =
-  Caqti_lwt_unix.Pool.use
-    (fun (module C : Caqti_lwt.CONNECTION) ->
-       let open Lwt_result.Syntax in
-       let* rows = C.collect_list Req.search query in
-       Lwt.return_ok
-         (List.map (fun (author, title, text) -> { author; title; text }) rows))
-    pool
+let quote_token tok =
+  let escaped = String.concat "\"\"" (String.split_on_char '"' tok) in
+  "\"" ^ escaped ^ "\""
+;;
+
+let tokens raw =
+  let trimmed = String.trim raw in
+  if String.length trimmed = 0
+  then []
+  else
+    trimmed
+    |> String.map (function
+      | '\t' | '\n' | '\r' -> ' '
+      | c -> c)
+    |> String.split_on_char ' '
+    |> List.filter (fun s -> String.length s > 0)
+;;
+
+let fts5_query ?(prefix = "") raw =
+  tokens raw |> List.map (fun tok -> prefix ^ quote_token tok) |> String.concat " AND "
+;;
+
+let run_search pool query =
+  if String.length query = 0
+  then Lwt.return_ok []
+  else
+    Caqti_lwt_unix.Pool.use
+      (fun (module C : Caqti_lwt.CONNECTION) ->
+         let open Lwt_result.Syntax in
+         let* rows = C.collect_list Req.search query in
+         Lwt.return_ok
+           (List.map (fun (author, title, text) -> { author; title; text }) rows))
+      pool
+;;
+
+let search pool raw_query = run_search pool (fts5_query raw_query)
+
+let search_author pool raw_author =
+  run_search pool (fts5_query ~prefix:"author:" raw_author)
+;;
+
+let search_title ?author pool raw_title =
+  let author_clauses =
+    match author with
+    | None -> []
+    | Some a ->
+      let trimmed = String.trim a in
+      if String.length trimmed = 0 then [] else [ "author:" ^ quote_token trimmed ]
+  in
+  let title_clauses =
+    tokens raw_title |> List.map (fun tok -> "title:" ^ quote_token tok)
+  in
+  let clauses = author_clauses @ title_clauses in
+  run_search pool (String.concat " AND " clauses)
 ;;
 
 let error_of_path path msg =

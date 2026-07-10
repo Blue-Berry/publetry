@@ -20,6 +20,17 @@ val add : t -> poem -> (unit, Caqti_error.t) result Lwt.t
 (** Full-text search over author and title. Results are ordered by FTS5 rank. *)
 val search : t -> string -> (poem list, Caqti_error.t) result Lwt.t
 
+(** Full-text search over title only. If [~author] is supplied, results are
+    further restricted to that author. Results are ordered by FTS5 rank. *)
+val search_title
+  :  ?author:string
+  -> t
+  -> string
+  -> (poem list, Caqti_error.t) result Lwt.t
+
+(** Full-text search over author only. Results are ordered by FTS5 rank. *)
+val search_author : t -> string -> (poem list, Caqti_error.t) result Lwt.t
+
 (** Read a JSON array of poems from [path] and insert them into the database.
     Expects objects with ["Author"], ["Title"] and ["text"] string fields. *)
 val populate : t -> string -> (unit, Caqti_error.t) result Lwt.t

@@ -4,9 +4,10 @@ let () =
      let* db = Db.create () in
      let* () = Db.init db in
      let* () = Db.populate db "poems.json" in
-     let* results = Db.search db "Robert Herrick" in
+     let* results = Db.search_title db ~author:"kipling" "if" in
      List.iter
-       (fun Db.{ author; title; _ } -> Printf.printf "%s — %s\n" author title)
+       (fun Db.{ author; title; text } ->
+          Printf.printf "%s — %s\n%s\n\n" author title text)
        results;
      Lwt.return_ok ())
   |> function
