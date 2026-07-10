@@ -97,3 +97,47 @@ let search pool query =
          (List.map (fun (author, title, text) -> { author; title; text }) rows))
     pool
 ;;
+
+let error_of_path path msg =
+  Caqti_error.request_failed ~uri:(Uri.of_string uri) ~query:path (Caqti_error.Msg msg)
+;;
+
+let json_to_poem json =
+  let open Yojson.Safe.Util in
+  { author = json |> member "Author" |> to_string
+  ; title = json |> member "Title" |> to_string
+  ; text = json |> member "text" |> to_string
+  }
+;;
+
+let parse_poems path contents =
+  try
+    Ok
+      (Yojson.Safe.from_string contents
+       |> Yojson.Safe.Util.to_list
+       |> List.map json_to_poem)
+  with
+  | exn -> Error (error_of_path path (Printexc.to_string exn))
+;;
+
+let populate pool path =
+  let open Lwt_result.Syntax in
+  let* contents =
+    Lwt.catch
+      (fun () ->
+         Lwt.map Result.ok Lwt_io.(with_file ~mode:input path (fun ch -> read ch)))
+      (fun exn -> Lwt.return_error (error_of_path path (Printexc.to_string exn)))
+  in
+  let* poems = Lwt.return (parse_poems path contents) in
+  Caqti_lwt_unix.Pool.use
+    (fun (module C : Caqti_lwt.CONNECTION) ->
+       C.with_transaction (fun () ->
+         let rec loop = function
+           | [] -> Lwt.return_ok ()
+           | { author; title; text } :: rest ->
+             let* () = C.exec Req.add (author, title, text) in
+             loop rest
+         in
+         loop poems))
+    pool
+;;

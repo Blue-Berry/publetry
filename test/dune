@@ -1,3 +1,11 @@
+(rule
+ (target poems.json)
+ (deps
+  (file ../poems.json))
+ (action
+  (copy ../poems.json poems.json)))
+
 (test
  (name test_publetry)
- (libraries publetry caqti lwt lwt.unix))
+ (libraries publetry caqti lwt lwt.unix)
+ (deps poems.json))

@@ -24,6 +24,9 @@ let () =
      assert ((List.hd results).title = "Sonnet 18");
      let* all = Db.search db "Shakespeare" in
      assert (List.length all = 2);
+     let* () = Db.populate db "poems.json" in
+     let* herrick = Db.search db "Robert Herrick" in
+     assert (List.length herrick > 0);
      Lwt.return_ok ())
   |> function
   | Ok () -> ()
