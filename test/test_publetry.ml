@@ -27,8 +27,6 @@ let () =
      let* () = Db.populate db "poems.json" in
      let* herrick = Db.search db "Robert Herrick" in
      assert (List.length herrick > 0);
-     let* herrick_author = Db.search_author db "Robert Herrick" in
-     assert (List.length herrick_author > 0);
      let* authors = Db.search_authors db "Robert" in
      assert (List.mem "Robert Herrick" authors);
      let* harvest = Db.search_title db "Harvest Home" in

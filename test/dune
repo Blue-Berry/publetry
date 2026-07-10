@@ -9,3 +9,7 @@
  (name test_publetry)
  (libraries publetry caqti lwt lwt.unix)
  (deps poems.json))
+
+(test
+ (name test_epub)
+ (libraries publetry lwt lwt.unix))

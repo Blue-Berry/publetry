@@ -119,6 +119,7 @@
           inputsFrom = [ main ];
           buildInputs = devPackages ++ [
             pkgs.git-lfs
+            pkgs.pandoc
           ];
         };
       }
