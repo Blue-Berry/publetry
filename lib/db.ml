@@ -68,6 +68,12 @@ module Req = struct
     @@ "SELECT p.author, p.title, p.text FROM poems_fts JOIN poems p ON p.id = \
         poems_fts.rowid WHERE poems_fts MATCH ? ORDER BY rank"
   ;;
+
+  let search_authors =
+    (string ->* string)
+    @@ "SELECT p.author FROM poems_fts JOIN poems p ON p.id = poems_fts.rowid WHERE \
+        poems_fts MATCH ? ORDER BY rank"
+  ;;
 end
 
 let init pool =
@@ -125,8 +131,17 @@ let run_search pool query =
 
 let search pool raw_query = run_search pool (fts5_query raw_query)
 
-let search_author pool raw_author =
-  run_search pool (fts5_query ~prefix:"author:" raw_author)
+let search_authors pool raw_query =
+  let query = fts5_query ~prefix:"author:" raw_query in
+  if String.length query = 0
+  then Lwt.return_ok []
+  else
+    Caqti_lwt_unix.Pool.use
+      (fun (module C : Caqti_lwt.CONNECTION) ->
+         let open Lwt_result.Syntax in
+         let* authors = C.collect_list Req.search_authors query in
+         Lwt.return_ok (List.sort_uniq String.compare authors))
+      pool
 ;;
 
 let search_title ?author pool raw_title =
