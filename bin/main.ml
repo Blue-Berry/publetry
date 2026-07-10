@@ -4,7 +4,7 @@ let () =
      let* db = Db.create () in
      let* () = Db.init db in
      let* () = Db.populate db "poems.json" in
-     let* results = Db.search_title db "if" in
+     let* results = Db.search_title db ~author:"kipling" "If" in
      match results with
      | [] -> Lwt.return_ok ()
      | poem :: _ ->
