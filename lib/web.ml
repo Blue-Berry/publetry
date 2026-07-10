@@ -82,4 +82,4 @@ let router db =
     ]
 ;;
 
-let run db = Dream.run ~interface:"0.0.0.0" ~port:8080 (router db)
+let run ~port db = Dream.run ~interface:"0.0.0.0" ~port (router db)

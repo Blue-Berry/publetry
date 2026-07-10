@@ -1,2 +1,2 @@
-(** Start the web server on port 8080, listening on all interfaces. *)
-val run : Db.t -> unit
+(** Start the web server listening on all interfaces. *)
+val run : port:int -> Db.t -> unit
