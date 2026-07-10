@@ -24,6 +24,10 @@ let authors db request =
      | Error err -> Dream.respond ~status:`Internal_Server_Error (Caqti_error.show err))
 ;;
 
+let json_title Db.{ author; title; _ } =
+  `Assoc [ "author", `String author; "title", `String title ]
+;;
+
 let titles db request =
   let open Lwt.Syntax in
   match Dream.query request "q" with
@@ -32,8 +36,7 @@ let titles db request =
     let author = Dream.query request "author" in
     let* result = Db.search_title db ?author q in
     (match result with
-     | Ok poems ->
-       Dream.json (json_strings (List.map (fun Db.{ title; _ } -> title) poems))
+     | Ok poems -> Dream.json (`List (List.map json_title poems) |> Yojson.Safe.to_string)
      | Error err -> Dream.respond ~status:`Internal_Server_Error (Caqti_error.show err))
 ;;
 
