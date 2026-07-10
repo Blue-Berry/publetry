@@ -41,7 +41,8 @@
           // {
             ## You can force versions of certain packages here, e.g:
             ## - force the ocaml compiler to be taken from opam-repository:
-            ocaml-base-compiler = "*";
+            ocaml-base-compiler = "5.5.0";
+            ocaml-config = "3";
             ## - or force the compiler to be taken from nixpkgs and be a certain version:
             # ocaml-system = "4.14.0";
             ## - or force ocamlfind to be a certain version:
@@ -50,6 +51,54 @@
         scope = on.buildOpamProject' {} ./. query;
         overlay = final: prev: {
           # You can add overrides here
+          ocaml-compiler = prev.ocaml-compiler.overrideAttrs (_: {
+            buildPhase = ''
+              runHook preBuild
+
+              build_id="$(evalOpamVar _:build-id)"
+              package_name="$(evalOpamVar _:name)"
+              make_cmd="$(evalOpamVar make)"
+              jobs="$(evalOpamVar jobs)"
+
+              # OCaml 5.5.0's opam build helper probes local opam switches,
+              # but opam-nix provides a limited fake opam. Build from source
+              # directly and emit the metadata expected by the install phase.
+              { echo "$build_id"; echo ""; } > build-id
+
+              ./configure \
+                --cache-file=config.cache \
+                --prefix="$(evalOpamVar prefix)" \
+                --docdir="$(evalOpamVar doc)/ocaml" \
+                --with-additional-stublibsdir \
+                --with-relative-libdir \
+                --enable-runtime-search \
+                --enable-runtime-search-target=fallback \
+                --disable-warn-error
+
+              "$make_cmd" "-j$jobs"
+              "$make_cmd" OPAM_PACKAGE_NAME=ocaml-compiler INSTALL_MODE=clone install
+
+              cat > "$package_name.install" <<'EOF'
+              share_root: [
+                "build-id" {"ocaml/build-id"}
+                "ocaml-compiler-clone.sh" {"ocaml/clone"}
+                "config.cache" {"ocaml/config.cache"}
+                "config.status" {"ocaml/config.status"}
+              ]
+              EOF
+
+              cat > "$package_name.config" <<EOF
+              opam-version: "2.0"
+              variables {
+                cloned: false
+                clone-source: ""
+                clone-mechanism: ""
+              }
+              EOF
+
+              runHook postBuild
+            '';
+          });
           ${package} = prev.${package}.overrideAttrs (_: {
             # Prevent the ocaml dependencies from leaking into dependent environments
             doNixSupport = false;
