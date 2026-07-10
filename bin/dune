@@ -1,4 +1,4 @@
 (executable
  (public_name publetry)
  (name main)
- (libraries publetry lwt lwt.unix uri))
+ (libraries publetry lwt lwt.unix))
