@@ -103,9 +103,11 @@
             # Prevent the ocaml dependencies from leaking into dependent environments
             doNixSupport = false;
             nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
+            buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.pandoc ];
             postInstall = (old.postInstall or "") + ''
               makeWrapper $out/bin/publetry $out/bin/publetry-server \
-                --add-flags "$out/share/publetry.db"
+                --add-flags "$out/share/publetry.db" \
+                --prefix PATH : ${pkgs.pandoc}/bin
             '';
           });
         };
