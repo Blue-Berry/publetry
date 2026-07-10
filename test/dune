@@ -1,14 +1,16 @@
 (rule
- (target poems.json)
+ (target publetry.db)
  (deps
-  (file ../poems.json))
+  (file ../publetry.db))
  (action
-  (copy ../poems.json poems.json)))
+  (progn
+   (copy ../publetry.db publetry.db)
+   (run chmod +w publetry.db))))
 
 (test
  (name test_publetry)
  (libraries publetry caqti lwt lwt.unix)
- (deps poems.json))
+ (deps publetry.db))
 
 (test
  (name test_epub)

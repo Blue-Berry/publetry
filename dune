@@ -1,3 +1,11 @@
+(rule
+ (target publetry.db)
+ (deps
+  (:build_db tools/build_db.exe)
+  (file poems.json))
+ (action
+  (run %{build_db} %{target} poems.json)))
+
 (env
  (dev
   (flags (:standard)))

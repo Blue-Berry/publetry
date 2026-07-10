@@ -8,11 +8,14 @@ type t = (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt_unix.Pool.t
 
 let uri = "sqlite3:./publetry.db"
 
-let create () =
-  match Caqti_lwt_unix.connect_pool (Uri.of_string uri) with
+let connect uri_string =
+  match Caqti_lwt_unix.connect_pool (Uri.of_string uri_string) with
   | Ok pool -> Lwt.return_ok pool
   | Error err -> Lwt.return_error (err :> [> Caqti_error.t ])
 ;;
+
+let create () = connect uri
+let close pool = Caqti_lwt_unix.Pool.drain pool
 
 module Req = struct
   open Caqti_request.Infix
@@ -92,6 +95,8 @@ module Req = struct
     @@ "SELECT author, title, text FROM poems WHERE author = ? COLLATE NOCASE ORDER BY \
         title"
   ;;
+
+  let count = (unit ->! int) @@ "SELECT COUNT(*) FROM poems"
 end
 
 let init pool =
@@ -211,6 +216,12 @@ let find_by_author pool author =
        let* rows = C.collect_list Req.find_by_author author in
        Lwt.return_ok
          (List.map (fun (author, title, text) -> { author; title; text }) rows))
+    pool
+;;
+
+let count pool =
+  Caqti_lwt_unix.Pool.use
+    (fun (module C : Caqti_lwt.CONNECTION) -> C.find Req.count ())
     pool
 ;;
 

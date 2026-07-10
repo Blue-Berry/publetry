@@ -1,0 +1,3 @@
+(executable
+ (name build_db)
+ (libraries publetry lwt lwt.unix))
