@@ -1,6 +1,7 @@
 (lang dune 3.20)
 
 (name publetry)
+(version de1adcc-dirty)
 
 (generate_opam_files true)
 
@@ -19,7 +20,14 @@
  (name publetry)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends
+  ocaml
+  caqti
+  caqti-lwt
+  caqti-driver-sqlite3
+  dream
+  yojson
+  ppx_deriving_yojson)
  (tags
   ("add topics" "to describe" your project)))
 
